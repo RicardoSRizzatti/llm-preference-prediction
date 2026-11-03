@@ -1,0 +1,44 @@
+# ---------------------------------------------------------------- dados
+# Dados nunca vão para o git: só a estrutura de pastas (.gitkeep).
+data/*/*
+!data/*/.gitkeep
+
+# --------------------------------------------------------------- modelos
+# models/ É versionado, mas SOMENTE em ONNX (+ metadata.json). Qualquer outro formato é ignorado.
+models/*
+!models/.gitkeep
+!models/*.onnx
+!models/metadata.json
+
+# ---------------------------------------------------------------- python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+*.egg-info/
+build/
+dist/
+
+# --------------------------------------------------------------- notebooks
+.ipynb_checkpoints/
+
+# ------------------------------------------------------------------ front
+node_modules/
+app/frontend/dist/
+*.tsbuildinfo
+
+# --------------------------------------------------------- segredos/local
+.env
+*.json.key
+service-account*.json
+
+# -------------------------------------------------------------- editores
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db

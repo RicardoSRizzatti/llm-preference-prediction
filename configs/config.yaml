@@ -1,0 +1,55 @@
+# Configuração central do projeto.
+# Caminhos relativos são resolvidos a partir da raiz do repositório.
+# Para usar outro arquivo: CONFIG_PATH=configs/outro.yaml make all
+
+project:
+  name: iris-classifier
+  title: Classificação de espécies de íris   # título exibido no app
+  seed: 42
+
+paths:
+  raw: data/raw              # saída do extract (dado como veio da fonte)
+  interim: data/interim      # saída do transform (limpo, ainda não publicado)
+  processed: data/processed  # saída do load quando o destino é local
+  split: data/split          # treino/teste gerados pelo ml/split.py
+  models: models             # artefatos versionados no git (somente .onnx + metadata.json)
+
+data:
+  table: iris                # nome da tabela/arquivo processado
+  target: species
+  features:
+    - sepal_length
+    - sepal_width
+    - petal_length
+    - petal_width
+  # Nomes exibidos no app (opcional; sem isso o app usa o nome da coluna)
+  display_names:
+    species: Espécie
+    sepal_length: Comprimento da sépala (cm)
+    sepal_width: Largura da sépala (cm)
+    petal_length: Comprimento da pétala (cm)
+    petal_width: Largura da pétala (cm)
+
+# Destino dos dados processados: local (padrão) | bigquery | gcs
+load:
+  destination: local
+  bigquery:
+    project: null            # ou defina GCP_PROJECT no .env
+    dataset: datascience_template
+    write_disposition: WRITE_TRUNCATE
+  gcs:
+    bucket: null             # ou defina GCS_BUCKET no .env
+    prefix: datascience_template
+
+split:
+  test_size: 0.2
+  stratify: true
+
+model:
+  file: model.onnx
+  metadata_file: metadata.json
+  target_opset: null         # null = opset mais recente suportado pelo skl2onnx
+  parity_tolerance: 1.0e-4   # diferença máxima aceita entre scikit-learn e ONNX
+  params:
+    C: 1.0
+    max_iter: 500

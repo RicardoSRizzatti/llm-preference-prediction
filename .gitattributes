@@ -1,0 +1,9 @@
+# Finais de linha consistentes entre Linux e WSL.
+* text=auto eol=lf
+
+# Modelos são binários (sem diff/merge de texto).
+*.onnx binary
+
+# Se algum modelo passar de ~50 MB, use Git LFS:
+#   git lfs install && git lfs track "models/*.onnx"
+# (isso adiciona aqui a linha: models/*.onnx filter=lfs diff=lfs merge=lfs -text)

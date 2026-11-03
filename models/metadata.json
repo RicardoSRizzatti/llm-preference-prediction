@@ -1,0 +1,133 @@
+{
+  "project": "iris-classifier",
+  "title": "Classificação de espécies de íris",
+  "model_file": "model.onnx",
+  "task": "classification",
+  "estimator": "LogisticRegression",
+  "trained_at": "2026-10-30T01:58:13+00:00",
+  "git": {
+    "commit": "6c83e9c",
+    "dirty": false
+  },
+  "features": [
+    "sepal_length",
+    "sepal_width",
+    "petal_length",
+    "petal_width"
+  ],
+  "feature_stats": {
+    "sepal_length": {
+      "type": "numeric",
+      "min": 4.3,
+      "max": 7.9,
+      "mean": 5.86218487394958,
+      "std": 0.8441214063052915
+    },
+    "sepal_width": {
+      "type": "numeric",
+      "min": 2.0,
+      "max": 4.4,
+      "mean": 3.0596638655462183,
+      "std": 0.4444229409727822
+    },
+    "petal_length": {
+      "type": "numeric",
+      "min": 1.1,
+      "max": 6.9,
+      "mean": 3.7621848739495793,
+      "std": 1.771477961737545
+    },
+    "petal_width": {
+      "type": "numeric",
+      "min": 0.1,
+      "max": 2.5,
+      "mean": 1.1974789915966386,
+      "std": 0.763961817405302
+    }
+  },
+  "target": "species",
+  "classes": [
+    "setosa",
+    "versicolor",
+    "virginica"
+  ],
+  "display_names": {
+    "species": "Espécie",
+    "sepal_length": "Comprimento da sépala (cm)",
+    "sepal_width": "Largura da sépala (cm)",
+    "petal_length": "Comprimento da pétala (cm)",
+    "petal_width": "Largura da pétala (cm)"
+  },
+  "params": {
+    "C": 1.0,
+    "max_iter": 500
+  },
+  "n_train": 119,
+  "onnx": {
+    "format": "onnx",
+    "opset": {
+      "ai.onnx.ml": 1,
+      "ai.onnx": 22
+    },
+    "inputs": [
+      "input"
+    ],
+    "outputs": [
+      "label",
+      "probabilities"
+    ],
+    "parity_max_abs_diff": 2.221510836952767e-07
+  },
+  "metrics": {
+    "accuracy": 0.9333333333333333,
+    "f1_macro": 0.9333333333333332,
+    "precision_macro": 0.9333333333333332,
+    "recall_macro": 0.9333333333333332,
+    "confusion_matrix": {
+      "labels": [
+        "setosa",
+        "versicolor",
+        "virginica"
+      ],
+      "matrix": [
+        [
+          10,
+          0,
+          0
+        ],
+        [
+          0,
+          9,
+          1
+        ],
+        [
+          0,
+          1,
+          9
+        ]
+      ]
+    },
+    "per_class": {
+      "setosa": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1-score": 1.0,
+        "support": 10.0
+      },
+      "versicolor": {
+        "precision": 0.9,
+        "recall": 0.9,
+        "f1-score": 0.9,
+        "support": 10.0
+      },
+      "virginica": {
+        "precision": 0.9,
+        "recall": 0.9,
+        "f1-score": 0.9,
+        "support": 10.0
+      }
+    }
+  },
+  "n_test": 30,
+  "evaluated_at": "2026-10-30T01:58:14+00:00"
+}
