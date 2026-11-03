@@ -10,10 +10,11 @@ endif
 UV    ?= uv
 RUN   := $(UV) run
 FRONT := app/frontend
-IMAGE ?= datascience-template
+IMAGE ?= llm-preference-prediction
 PORT  ?= 8000
+COMPETITION := llm-classification-finetuning
 
-.PHONY: help setup setup-gcp front-install \
+.PHONY: help setup setup-gcp front-install data \
         extract transform load etl split fit evaluate train all \
         app front-dev front-build dev docker-build docker-run docker \
         test lint format check notebook clean clean-data
@@ -32,6 +33,12 @@ setup-gcp: ## Instala também o grupo gcp (BigQuery / Cloud Storage)
 
 front-install: ## Instala as dependências do front
 	cd $(FRONT) && npm ci
+
+# -------------------------------------------------------------------- dados
+data: ## Baixa os dados da competição no Kaggle (token em ~/.kaggle/kaggle.json)
+	mkdir -p data/raw/llm-classification-finetuning
+	$(UV) tool run kaggle competitions download -c $(COMPETITION) -p data/raw
+	unzip -n -q data/raw/$(COMPETITION).zip -d data/raw/llm-classification-finetuning
 
 # ---------------------------------------------------------------------- ETL
 extract: ## ETL: fonte → data/raw

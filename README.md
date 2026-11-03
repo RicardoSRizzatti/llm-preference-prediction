@@ -1,22 +1,85 @@
-# Data Science Template
+# Previsão de preferência humana entre respostas de LLMs
 
-Template para projetos de ciência de dados, da extração dos dados ao modelo servido num webapp: **ETL → treinamento (ONNX) → API FastAPI + front React**, tudo automatizado com `make` e empacotado em Docker.
+Dado um prompt e as respostas de dois modelos de linguagem, prever **qual resposta uma pessoa vai preferir**, ou se ela vai considerar empate. Os dados vêm de conversas reais do **Chatbot Arena** e o problema é o da competição **LLM Classification Finetuning** do Kaggle.
 
-O repositório já vem com um exemplo funcionando de ponta a ponta (classificação de espécies do dataset Iris). Ele serve de referência e deve ser substituído pelo seu problema.
+> 🚧 Projeto em andamento. O roteiro e o status de cada etapa estão na seção [Roteiro](#roteiro).
 
 ---
 
-## Sobre o projeto
+## Contexto
 
-> Preencha esta seção em cada projeto criado a partir do template. O texto abaixo descreve o exemplo.
+No Chatbot Arena, o usuário escreve um prompt, recebe lado a lado as respostas de dois LLMs anônimos e vota na melhor, ou declara empate. Esses votos são a base de rankings públicos de modelos e são exatamente o tipo de sinal usado para alinhar LLMs com aprendizado por reforço a partir de feedback humano (RLHF): antes de otimizar um modelo para agradar as pessoas, é preciso um **modelo de recompensa** que preveja o que elas preferem.
+
+Prever esse voto não é trivial. As pessoas não julgam só pelo conteúdo: há vieses conhecidos de posição (a resposta exibida primeiro), de tamanho (respostas mais longas tendem a ganhar) e de estilo (formatação, listas, tom). Um bom modelo precisa capturar a qualidade real da resposta e também esses atalhos humanos.
+
+## O desafio
+
+Cada exemplo tem um prompt (às vezes uma conversa de vários turnos), a resposta A e a resposta B. O modelo deve devolver três probabilidades: A vence, B vence ou empate.
+
+O que torna o problema difícil:
+
+- **Rótulo ruidoso e subjetivo**: pessoas diferentes votariam de forma diferente na mesma comparação, e o empate é frequente.
+- **Textos longos**: prompt e duas respostas juntos passam facilmente do limite de contexto de modelos menores, o que obriga a truncar com critério.
+- **Vieses de posição e de tamanho**, que o modelo precisa aprender sem depender só deles.
+- **Simetria**: trocar A e B deveria trocar as probabilidades, e o modelo nem sempre respeita isso sozinho.
+- **Restrição de execução**: a submissão roda num notebook do Kaggle **sem internet**, em até 9 horas de CPU ou GPU, o que limita o tamanho do modelo usado na inferência.
+
+## Objetivo e métrica
+
+**Objetivo:** construir um classificador de preferência com log loss bem abaixo do baseline uniforme (ln 3 ≈ 1,0986), partindo de um modelo de features leve e chegando a um modelo de linguagem ajustado (*fine-tuning*), e servir o modelo por uma API que recebe prompt e respostas e devolve as probabilidades.
+
+**Métrica oficial:** log loss multiclasse sobre as três probabilidades:
+
+```
+LogLoss = −(1/N) · Σ_i Σ_c  y_ic · ln(p_ic),    c ∈ {winner_model_a, winner_model_b, winner_tie}
+```
+
+Quanto menor, melhor. A métrica pune muito previsões confiantes e erradas, então a calibração das probabilidades importa tanto quanto o acerto.
+
+Métricas complementares: acurácia, matriz de confusão (com atenção ao empate) e consistência ao trocar A e B.
+
+## Dados
 
 | | |
 |---|---|
-| **Problema** | Classificar a espécie de uma flor (setosa, versicolor ou virginica) a partir de 4 medidas. |
-| **Dados** | Dataset Iris (150 amostras), carregado do scikit-learn em `etl/extract.py`. |
-| **Abordagem** | `StandardScaler` + `LogisticRegression`, exportados juntos em ONNX. |
-| **Métrica principal** | F1 macro no conjunto de teste (20%, estratificado). |
-| **Resultado** | Ver `models/metadata.json` ou a seção *Qualidade do modelo* no app. |
+| **Competição (dados e regras)** | <https://www.kaggle.com/competitions/llm-classification-finetuning> |
+| **Tipo** | *Getting Started* contínua, aberta até 01/07/2030 |
+| **Origem** | Votos do Chatbot Arena (LMSYS) |
+| **`train.csv`** | `id`, `model_a`, `model_b`, `prompt`, `response_a`, `response_b`, `winner_model_a`, `winner_model_b`, `winner_tie` |
+| **`test.csv`** | `id`, `prompt`, `response_a`, `response_b` (sem os nomes dos modelos) |
+| **Submissão** | `submission.csv` com `id`, `winner_model_a`, `winner_model_b`, `winner_tie`, gerado por notebook do Kaggle; modelos pré-treinados e dados externos são permitidos |
+
+Os campos de texto guardam listas de mensagens (uma por turno da conversa). Os dados **não são versionados** neste repositório. Para reproduzir, aceite as regras na página da competição e baixe com a CLI do Kaggle (token em `~/.kaggle/kaggle.json`):
+
+```bash
+make data   # usa a CLI do Kaggle via uv e descompacta em data/raw/llm-classification-finetuning
+```
+
+## Sobre o projeto
+
+| | |
+|---|---|
+| **Problema** | Prever a preferência humana (A, B ou empate) entre duas respostas de LLMs ao mesmo prompt. |
+| **Dados** | Conversas e votos do Chatbot Arena, via competição LLM Classification Finetuning (Kaggle). |
+| **Abordagem (planejada)** | 1) Baseline de features (tamanho, diferença de tamanho, formatação, sobreposição com o prompt) com gradient boosting, exportado em ONNX. 2) *Fine-tuning* em PyTorch de um modelo de linguagem como classificador de pares, com LoRA, aumentando os dados com a troca de A e B. 3) Calibração e combinação dos modelos. Validação cruzada estratificada. |
+| **Métrica principal** | Log loss multiclasse. |
+| **Resultado** | A preencher: ver `models/metadata.json` ou a seção *Qualidade do modelo* no app. |
+
+## Roteiro
+
+- [ ] Baixar os dados para `data/raw/llm-classification-finetuning` e adaptar `etl/extract.py`
+- [ ] Análise exploratória em `notebooks/`: distribuição dos rótulos, taxa de empate, tamanho dos textos, viés de posição e de tamanho, modelos mais frequentes
+- [ ] `etl/transform.py`: decodificar as conversas, normalizar textos e gerar a versão com A e B trocados
+- [ ] Baseline de features com gradient boosting, exportado em ONNX e servido pela API
+- [ ] *Fine-tuning* de um modelo de linguagem em PyTorch com LoRA e estratégia de truncamento para textos longos
+- [ ] Calibração das probabilidades e combinação dos modelos
+- [ ] Notebook de inferência que roda no Kaggle sem internet dentro do limite de tempo, e submissão
+- [ ] Análise de erros: onde o modelo erra, viés de tamanho nas previsões e consistência ao trocar A e B
+
+## Referências
+
+- L. Zheng *et al.*, "Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena", *NeurIPS Datasets and Benchmarks*, 2023. <https://arxiv.org/abs/2306.05685>
+- Competição no Kaggle: <https://www.kaggle.com/competitions/llm-classification-finetuning>
 
 ---
 
@@ -173,18 +236,6 @@ Gráficos padronizados ficam em `app/frontend/src/charts/`:
 - `BarChart`, `LineChart` (com amostragem LTTB e zoom para séries longas) e `HeatmapChart`.
 
 Para um novo tipo de gráfico: registre-o em `charts/echarts.ts` e crie o componente em `charts/` usando `baseOption`, `valueAxis` e `categoryAxis` do tema.
-
----
-
-## Novo projeto a partir do template
-
-1. No GitHub: **Use this template → Create a new repository**.
-2. Preencha a seção *Sobre o projeto* deste README.
-3. Ajuste `configs/config.yaml`: nome do projeto, tabela, target e features.
-4. Substitua `extract()` pela sua fonte e as regras de `transform()`.
-5. Defina o modelo em `build_pipeline()` (`ml/train.py`).
-6. `make all`, confira as métricas, itere e comite `models/`.
-7. Apague os testes específicos do Iris em `tests/test_api.py` e `tests/test_etl.py` (ou adapte-os).
 
 ---
 
